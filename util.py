@@ -3,7 +3,7 @@ import numpy as np
 import SimpleITK as sitk
 
 
-def rotation_matrix(param):
+def create_rotation_matrix(param):
     '''
     Create a rotation matrix from 3 rotation angels around X, Y, and Z:
     =================
@@ -39,23 +39,24 @@ def rotation_matrix(param):
     
     # Apply the rotation first around Y then X then Z.
     # To follow ITK transformation functions.
-    rot = Rz @ Rx @ Ry
+    rot = np.matmul(Rz, Rx) 
+    rot = np.matmul(rot, Ry)
 
     return rot
 
 
- def create_affine_matrix(
-        scale,
-        rotation,
-        translation,
-        image_size,
-    ):
-        scale = np.random.uniform(*scale)
-        rotation = np.random.uniform(*rotation, 3)
-        translation = np.random.uniform(*translation, 3)
+def create_affine_matrix(
+    scale,
+    rotation,
+    translation,
+    image_size,
+):
+        scale = np.random.uniform(scale[0], scale[1])
+        rotation = np.random.uniform(rotation[0], rotation[1], 3)
+        translation = np.random.uniform(translation[0], translation[1], 3)
 
         # Create rotation Matrix
-        rot = rotation_matrix(rotation)
+        rot = create_rotation_matrix(rotation)
 
         affine_trans_rot = np.eye(4)
         affine_trans_rot[:3, :3] = rot
@@ -65,23 +66,35 @@ def rotation_matrix(param):
 
         # Create translation matrix
         affine_trans_translation = np.eye(4)
-        affine_trans_translation[:, 3] = [*translation, 1]
+        affine_trans_translation[:, 3] = [translation[0],
+                                          translation[1],
+                                          translation[2],
+                                          1]
 
         # Create shift & unshift matrix to apply rotation around
         # center of image not (0,0,0)
         shift = - np.asarray(image_size) // 2
         affine_trans_shift = np.eye(4)
-        affine_trans_shift[:, 3] = [*shift, 1]
+        affine_trans_shift[:, 3] = [shift[0],
+                                    shift[1],
+                                    shift[2],
+                                    1]
 
         unshift = - shift
         affine_trans_unshift = np.eye(4)
-        affine_trans_unshift[:, 3] = [*unshift, 1]
+        affine_trans_unshift[:, 3] = [unshift[0],
+                                      unshift[1],
+                                      unshift[2],
+                                      1]
 
         # Apply transformations
-        affine_trans = affine_trans_scale @ affine_trans_translation @ \
-            affine_trans_unshift @ affine_trans_rot @ affine_trans_shift
+        affine_trans = np.matmul(affine_trans_scale, affine_trans_translation)
+        affine_trans = np.matmul(affine_trans, affine_trans_unshift)
+        affine_trans = np.matmul(affine_trans, affine_trans_rot)
+        affine_trans = np.matmul(affine_trans, affine_trans_shift)
 
         return affine_trans
+
 
 def similarity_transform_volumes(
     image,
@@ -90,35 +103,39 @@ def similarity_transform_volumes(
 ):
     image_size = np.shape(image)
     possible_scales = np.divide(image_size, target_size)
-            crop_scale = np.max(possible_scales)
-            if crop_scale <= 1:
-                crop_scale = 1
-            scale_transform = np.diag((crop_scale,
-                                       crop_scale,
-                                       crop_scale,
-                                       1))
-            shift = -(
-                np.asarray(target_size) - np.asarray(
-                    image_size // np.asarray(crop_scale),
-                )
-            ) // 2
-            affine_trans_to_center = np.eye(4)
-            affine_trans_to_center[:, 3] = [*shift, 1]
+    crop_scale = np.max(possible_scales)
+    if crop_scale <= 1:
+        crop_scale = 1
+    scale_transform = np.diag((crop_scale,
+                               crop_scale,
+                               crop_scale,
+                               1))
+    shift = -(
+        np.asarray(target_size) - np.asarray(
+            image_size // np.asarray(crop_scale),
+        )
+    ) // 2
+    affine_trans_to_center = np.eye(4)
+    affine_trans_to_center[:, 3] = [shift[0],
+                                    shift[1],
+                                    shift[2],
+                                    1]
 
-            transform = affine_trans @ scale_transform @ \
-                affine_trans_to_center
+    transform = np.matmul(affine_trans, scale_transform)
+    transform = np.matmul(transform, affine_trans_to_center)
 
     nifti_img = nib.Nifti1Image(image, affine=np.eye(4))
-            nifti_image_t = nil_image.resample_img(
-                nifti_img,
-                target_affine=transform,
-                target_shape=target_size,
-                interpolation=interpolation,
-            )
-            image_t = nifti_image_t.get_data()
+    nifti_image_t = nil_image.resample_img(
+        nifti_img,
+        target_affine=transform,
+        target_shape=target_size,
+        interpolation=interpolation,
+    )
+    image_t = nifti_image_t.get_data()
             
     return image_t, transform
-    
+
+
 def vrrotvec2mat(ax_ang):
     """
     Create a rotation matrix corresponding to the rotation around a general
