@@ -213,6 +213,23 @@ def vrrotvec2mat(ax_ang):
     return mtx
 
 
+def vec3_to_vec5(vec3):
+    teta = np.linalg.norm(vec3)
+    vec = vec3/teta
+    vec5 = np.zeros((5,1))
+    vec5[0] = vec[0]
+    vec5[1] = vec[1]
+    vec5[2] = vec[2]
+    vec5[3] = teta
+    vec5[4] = 1
+    
+    return vec5
+
+
+def vec5_to_vec3(vec5):
+    return vec5[3,0]*vec5[:3,0]
+
+
 def vrrotmat2vec(mat1, rot_type='proper'):
     """
     Create an axis-angle np.array from Rotation Matrix:
@@ -349,3 +366,26 @@ def vrrotmat2vec(mat1, rot_type='proper'):
         ax_ang[:4, ind3] = np.vstack((axis.transpose(), phi.transpose()))
 
     return ax_ang
+
+
+def geodesic_distance(
+    rot1,
+    rot2,
+):
+    
+    distance = np.abs(
+        np.arccos(
+            np.clip(
+                0.5*np.trace(
+                    np.matmul(
+                        np.transpose(rot1),
+                        rot2,
+                    )
+                )-1,
+                -1.0+1e-7,
+                1.0-1e-7,
+            )
+        )
+    )
+
+    return distance
