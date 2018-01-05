@@ -16,6 +16,18 @@ def load_3d_data(
     return volume, affine
 
 
+def auto_crop(
+    image,
+):
+    """Loads data.
+    """
+    nifti_img = nib.Nifti1Image(image, affine=np.eye(4))
+    image_croped = nil_image.crop_img(nifti_img)
+
+    volume = image_croped.get_data()
+
+    return volume
+
 def create_rotation_matrix(param):
     '''
     Create a rotation matrix from 3 rotation angels around X, Y, and Z:

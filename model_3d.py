@@ -13,8 +13,10 @@ def Pitanh(x):
 def model_3d(width, height, depth, channel):
     model = Sequential()
 
+    model.add(MaxPooling3D(pool_size=(3, 3, 3), strides=(2, 2, 2), padding='same'
+                          , input_shape=(width, height, depth, channel)))
     model.add(Conv3D(8, (3, 3, 3), activation='relu', padding='same'
-                     , input_shape=(width, height, depth, channel)))
+                     ))
     model.add(MaxPooling3D(pool_size=(3, 3, 3), strides=(2, 2, 2), padding='same'))
     model.add(BatchNormalization())
 
