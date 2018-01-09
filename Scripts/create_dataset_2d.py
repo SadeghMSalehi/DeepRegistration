@@ -21,7 +21,7 @@ sample_number = 25
 
 files = os.listdir(data_path+'controls/')
 number_of_files = np.size(files)
-for j in range(20):
+for j in range(30):
     dataset = np.zeros([number_of_files*sample_number,
                         target_size[0],
                         target_size[1],
@@ -49,7 +49,7 @@ for j in range(20):
 
             dataset[sample_number*counter+i, ...] = img_t
             labels[sample_number*counter+i, ...] = vec3
-        print(file_name)
+    print(j)
 
-    np.save('./imageData'+str(j),dataset)
-    np.save('./Label'+str(j),labels)
+    np.save('./imageData'+str(j+62),dataset)
+    np.save('./Label'+str(j+62),labels)

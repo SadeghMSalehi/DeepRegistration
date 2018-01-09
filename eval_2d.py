@@ -4,7 +4,7 @@ import click
 import numpy as np
 import nibabel as nib
 
-from .model_3d import model_3d
+import resnet
 from .util import (
     load_3d_data,
     create_affine_matrix,
@@ -27,7 +27,7 @@ depth = 120
 n_channels = 1 
 
 number_of_eval = 100
-model_path = './resources/model/Move_only_3.h5'
+model_path = '/host/home/exx/Documents/resources/model/2dTo3d_2.h5'
 data_path = './DeepRegistration/SampleData/' 
 # -----------------------------------------------------------------------------
 
@@ -42,10 +42,10 @@ def eval_model(
     model_path,
     data_path,
 ):
-    model = model_3d(width, height, depth, n_channels)
+    model = resnet.ResnetBuilder.build_resnet_18((n_channels, width, height), 3)    
     model.load_weights(model_path)
 
-    TestImage = np.zeros((1, width, height, depth, n_channels))
+    TestImage = np.zeros((1, width, height, depth))
     result = np.zeros((number_of_eval, 4))
     target_size = [width, height, depth]
 
@@ -61,11 +61,11 @@ def eval_model(
                                                         [0,0],
                                                         croped_image.shape)
 
-        TestImage[..., 0], _ = similarity_transform_volumes(croped_image,
+        TestImage[0:1,...], _ = similarity_transform_volumes(croped_image,
                                                             affine_mov,
                                                             target_size,)
 
-        nifti_image = nib.Nifti1Image(TestImage[0,:,:,:,0], mov_affine)
+        nifti_image = nib.Nifti1Image(TestImage[0,...], mov_affine)
         nib.save(nifti_image, './rotated'+str(i))
         
         GT_rot_mat = create_rotation_matrix(rotation_mov)
@@ -73,7 +73,7 @@ def eval_model(
         vec3_GT = vec5_to_vec3(vec5_GT)
         inv_GT_rot_mat = np.linalg.inv(GT_rot_mat)
 
-        vec3_pred = model.predict(TestImage, batch_size=1)
+        vec3_pred = model.predict(TestImage[...,60:61], batch_size=1)
         vec5_pred = vec3_to_vec5(vec3_pred[0, :])
         pred_rot_mat = vrrotvec2mat(vec5_pred)
         inv_pred_rot_mat = np.linalg.inv(pred_rot_mat)
@@ -83,7 +83,7 @@ def eval_model(
                                                         [0,0],
                                                         target_size)
 
-        GT_rot_back_img, _ = similarity_transform_volumes(TestImage[0,:,:,:,0],
+        GT_rot_back_img, _ = similarity_transform_volumes(TestImage[0,:,:,:],
                                                             affine_mov,
                                                             target_size,)
         nifti_image = nib.Nifti1Image(GT_rot_back_img, mov_affine)
@@ -94,7 +94,7 @@ def eval_model(
                                                         [0,0],
                                                         target_size)
 
-        pred_rot_back_img, _ = similarity_transform_volumes(TestImage[0,:,:,:,0],
+        pred_rot_back_img, _ = similarity_transform_volumes(TestImage[0,:,:,:],
                                                             affine_mov,
                                                             target_size,)
         nifti_image = nib.Nifti1Image(pred_rot_back_img, mov_affine)

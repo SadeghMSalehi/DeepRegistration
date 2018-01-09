@@ -77,14 +77,19 @@ def create_affine_matrix(
     image_size,
 ):
         scale = np.random.uniform(scale[0], scale[1])
-        rotation = np.random.uniform(rotation[0], rotation[1], 3)
-        translation = np.random.uniform(translation[0], translation[1], 3)
-
-        # Create rotation Matrix
-        rot = create_rotation_matrix(rotation)
+        
+        if np.size(rotation) == 2:
+            rotation = np.random.uniform(rotation[0], rotation[1], 3)
+            # Create rotation Matrix
+            rot = create_rotation_matrix(rotation)
+        else:
+            rot = rotation
 
         affine_trans_rot = np.eye(4)
         affine_trans_rot[:3, :3] = rot
+        
+        
+        translation = np.random.uniform(translation[0], translation[1], 3)
 
         # Create scale matrix
         affine_trans_scale = np.diag([scale, scale, scale, 1.])
