@@ -2,6 +2,7 @@ import nibabel as nib
 import nilearn.image as nil_image
 import numpy as np
 import SimpleITK as sitk
+import scipy
 
 def load_3d_data(
     filename,
@@ -395,14 +396,35 @@ def geodesic_distance(
             np.clip(
                 0.5*np.trace(
                     np.matmul(
-                        np.transpose(rot1),
                         rot2,
+                        np.linalg.inv(rot1),
                     )
                 )-1,
                 -1.0+1e-7,
                 1.0-1e-7,
             )
         )
+    )
+
+    return distance
+
+
+def rot_distance(
+    rot2,
+    rot1,
+):
+    distance = (1/np.sqrt(2)) * np.linalg.norm(
+        scipy.linalg.logm(
+            np.clip(
+                np.matmul(
+                   rot2,
+                   np.transpose(rot1),
+                ),
+                0,
+                2,
+            )
+        ),
+        ord = 'fro',
     )
 
     return distance

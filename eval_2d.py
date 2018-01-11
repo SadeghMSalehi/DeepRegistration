@@ -17,7 +17,7 @@ from .util import (
     vrrotmat2vec,
     geodesic_distance,
     auto_crop,
-    
+    rot_distance,
 )
 
 # -----------------------------------------------------------------------------
@@ -27,7 +27,7 @@ depth = 120
 n_channels = 1 
 
 number_of_eval = 100
-model_path = '/host/home/exx/Documents/resources/model/2dTo3d_2.h5'
+model_path = '/host/home/exx/Documents/resources/model/3view_2dTo3d_4.h5'
 data_path = './DeepRegistration/SampleData/' 
 # -----------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ def eval_model(
 
     croped_image = auto_crop(mov_img)
     
-    for i in range(number_of_eval):
+    for i in range(1,4):
 
         affine_mov, rotation_mov = create_affine_matrix([1,1],
                                                         [-30,30],
@@ -68,45 +68,46 @@ def eval_model(
         nifti_image = nib.Nifti1Image(TestImage[0,...], mov_affine)
         nib.save(nifti_image, './rotated'+str(i))
         
+        tmp = np.moveaxis(TestImage, i, 1)
+        
         GT_rot_mat = create_rotation_matrix(rotation_mov)
         vec5_GT = vrrotmat2vec(GT_rot_mat)
         vec3_GT = vec5_to_vec3(vec5_GT)
         inv_GT_rot_mat = np.linalg.inv(GT_rot_mat)
 
-        vec3_pred = model.predict(TestImage[...,60:61], batch_size=1)
+        vec3_pred = model.predict(tmp[...,55:56], batch_size=1)
         vec5_pred = vec3_to_vec5(vec3_pred[0, :])
         pred_rot_mat = vrrotvec2mat(vec5_pred)
         inv_pred_rot_mat = np.linalg.inv(pred_rot_mat)
         
-        affine_mov, rotation_mov = create_affine_matrix([1,1],
-                                                        inv_GT_rot_mat,
-                                                        [0,0],
-                                                        target_size)
+#         affine_mov_GT, rotation_mov = create_affine_matrix([1,1],
+#                                                         inv_GT_rot_mat,
+#                                                         [0,0],
+#                                                         target_size)
 
-        GT_rot_back_img, _ = similarity_transform_volumes(TestImage[0,:,:,:],
-                                                            affine_mov,
-                                                            target_size,)
-        nifti_image = nib.Nifti1Image(GT_rot_back_img, mov_affine)
-        nib.save(nifti_image, './GT_Backed'+str(i))
+#         GT_rot_back_img, _ = similarity_transform_volumes(TestImage[0,:,:,:],
+#                                                             affine_mov_GT,
+#                                                             target_size,)
+#         nifti_image = nib.Nifti1Image(GT_rot_back_img, mov_affine)
+#         nib.save(nifti_image, './GT_Backed'+str(i))
         
-        affine_mov, rotation_mov = create_affine_matrix([1,1],
+        affine_mov_pred, rotation_mov = create_affine_matrix([1,1],
                                                         inv_pred_rot_mat,
                                                         [0,0],
                                                         target_size)
 
         pred_rot_back_img, _ = similarity_transform_volumes(TestImage[0,:,:,:],
-                                                            affine_mov,
+                                                            affine_mov_pred,
                                                             target_size,)
         nifti_image = nib.Nifti1Image(pred_rot_back_img, mov_affine)
         nib.save(nifti_image, './Pred_Backed'+str(i))
         
-        distance = geodesic_distance(GT_rot_mat, pred_rot_mat)
-#         result[i,:-1] = rotation_mov
-        result[i,-1] = distance
+        Rot_distance2 = rot_distance(GT_rot_mat, pred_rot_mat)*180/3.1415
+
         print("True rotation vector is: {}".format(vec3_GT))
         print("Predicted rotation vector is: {}".format(vec3_pred[0, :]))
         print("MSE of rotation vectors is: {}".format(np.linalg.norm((vec3_pred[0, :]- vec3_GT))))
-        print("Geodesic distance is: {}".format(distance))
+        print("Rot distance is: {}".format(Rot_distance2))
         print('---------')
     return
 
