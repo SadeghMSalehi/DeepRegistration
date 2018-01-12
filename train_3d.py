@@ -37,20 +37,20 @@ def train_model():
     tbCallBack = keras.callbacks.TensorBoard(log_dir='./tensorboard/'+str(current_time)[:19], histogram_freq=0, write_graph=True, write_images=False)
 
     for j in range(30):
-        for i in range(21):
-            images = np.load('./30DegreeData/imageData'+str(i)+'.npy')
-            labels = np.load('./30DegreeData/Label'+str(i)+'.npy')
+        for i in range(65):
+            images = np.load('/host/data/30DegreeData/imageData'+str(i)+'.npy')
+            labels = np.load('/host/data/30DegreeData/Label'+str(i)+'.npy')
             print('data loaded')
             images = images[..., np.newaxis]
             model.fit(images[:-75],
                       labels[:-75],
                       batch_size=32,
-                      epochs=10*i+10,
-                      initial_epoch = 10*i,
+                      epochs=(65*10*j)+10*i+10,
+                      initial_epoch = (65*10*j)+10*i,
                       callbacks=[tbCallBack],
                       validation_data=(images[-75:], labels[-75:]),
                       shuffle=True)
-            model.save('./resources/model/Move_only_3.h5')
+            model.save('./resources/model/3d_3d_4.h5')
     
     return
 

@@ -21,7 +21,7 @@ sample_number = 25
 
 files = os.listdir(data_path+'controls/')
 number_of_files = np.size(files)
-for j in range(30):
+for j in range(65):
     dataset = np.zeros([number_of_files*sample_number,
                         target_size[0],
                         target_size[1],
@@ -36,7 +36,7 @@ for j in range(30):
 
         for i in range(sample_number):
             affine, rotation = create_affine_matrix([1,1],
-                                                    [-30,30],
+                                                    [-180,179],
                                                     [0,0],
                                                     croped_image.shape)
             img_t, transform = similarity_transform_volumes(croped_image,
@@ -51,5 +51,5 @@ for j in range(30):
             labels[sample_number*counter+i, ...] = vec3
     print(j)
 
-    np.save('./imageData'+str(j+62),dataset)
-    np.save('./Label'+str(j+62),labels)
+    np.save('/host/data/180DegreeData/imageData'+str(j),dataset)
+    np.save('/host/data/180DegreeData/Label'+str(j),labels)
